@@ -43,6 +43,8 @@ DOCKER: 'DOCKER' -> pushMode(BLOCK), pushMode(COMMAND_ARGS);
 IF: 'IF' -> pushMode(BLOCK), pushMode(COMMAND_ARGS);
 FOR: 'FOR' -> pushMode(BLOCK), pushMode(COMMAND_ARGS);
 
+WAIT: 'WAIT' -> pushMode(BLOCK);
+
 NL: [ \t]* COMMENT? (EOF | CRLF);
 WS: [ \t] ([ \t] | LC)*;
 fragment CRLF: ('\r' | '\n' | '\r\n');
@@ -93,6 +95,8 @@ DOCKER_R: DOCKER -> type(DOCKER), pushMode(BLOCK), pushMode(COMMAND_ARGS);
 IF_R: IF -> type(IF), pushMode(BLOCK), pushMode(COMMAND_ARGS);
 FOR_R: FOR -> type(FOR), pushMode(BLOCK), pushMode(COMMAND_ARGS);
 
+WAIT_R: WAIT -> type(WAIT), pushMode(BLOCK);
+
 NL_R: NL -> type(NL);
 WS_R: WS -> type(WS);
 
@@ -135,6 +139,7 @@ IF_B: IF -> type(IF), pushMode(BLOCK), pushMode(COMMAND_ARGS);
 ELSE: 'ELSE' -> pushMode(COMMAND_ARGS);
 ELSE_IF: 'ELSE IF' -> pushMode(COMMAND_ARGS);
 FOR_B: FOR -> type(FOR), pushMode(BLOCK), pushMode(COMMAND_ARGS);
+WAIT_B: WAIT -> type(WAIT), pushMode(BLOCK);
 END: 'END' -> popMode, pushMode(COMMAND_ARGS);
 
 NL_B: NL -> type(NL);

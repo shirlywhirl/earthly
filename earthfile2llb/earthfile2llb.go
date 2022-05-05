@@ -113,6 +113,9 @@ type ConvertOpt struct {
 	// ContainerFrontend is the currently used container frontend, as detected by Earthly at app start. It provides info
 	// and access to commands to manipulate the current container frontend.
 	ContainerFrontend containerutil.ContainerFrontend
+
+	// waitBlockPromises is a list of channels which must complete before a WAIT/END block finishes
+	waitBlock *waitBlock
 }
 
 // Earthfile2LLB parses a earthfile and executes the statements for a given target.
@@ -131,6 +134,9 @@ func Earthfile2LLB(ctx context.Context, target domain.Target, opt ConvertOpt, in
 		opt.ErrorGroup, ctx = serrgroup.WithContext(ctx)
 		egWait = true
 		defer func() {
+			if retErr != nil {
+				return
+			}
 			if egWait {
 				// We haven't waited for the ErrorGroup yet. The ErrorGroup will
 				// return the very first error encountered, which may be
@@ -162,6 +168,17 @@ func Earthfile2LLB(ctx context.Context, target domain.Target, opt ConvertOpt, in
 			}
 			opt.ForceSaveImage = true // legacy mode always saves images regardless of locally or remotely referenced
 		}
+		if opt.waitBlock != nil {
+			panic("waitBlock should not be set during initial call")
+		}
+		opt.waitBlock = newWaitBlock()
+
+		defer func() {
+			err := opt.waitBlock.wait(ctx) // ensure final waitblock completes
+			if retErr == nil {
+				retErr = err
+			}
+		}()
 	}
 	opt.PlatformResolver.AllowNativeAndUser = opt.Features.NewPlatform
 

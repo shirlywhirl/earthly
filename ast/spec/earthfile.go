@@ -39,6 +39,7 @@ type Statement struct {
 	With           *WithStatement  `json:"with,omitempty"`
 	If             *IfStatement    `json:"if,omitempty"`
 	For            *ForStatement   `json:"for,omitempty"`
+	Wait           *WaitStatement  `json:"wait,omitempty"`
 	SourceLocation *SourceLocation `json:"sourceLocation,omitempty"`
 }
 
@@ -78,6 +79,12 @@ type ElseIf struct {
 // ForStatement is the AST representation of a for statement.
 type ForStatement struct {
 	Args           []string        `json:"args"`
+	Body           Block           `json:"body"`
+	SourceLocation *SourceLocation `json:"sourceLocation,omitempty"`
+}
+
+// WaitStatement is the AST representation of a for statement.
+type WaitStatement struct {
 	Body           Block           `json:"body"`
 	SourceLocation *SourceLocation `json:"sourceLocation,omitempty"`
 }

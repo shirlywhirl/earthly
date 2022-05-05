@@ -148,6 +148,8 @@ func (i *Interpreter) handleStatement(ctx context.Context, stmt spec.Statement) 
 		return i.handleIf(ctx, *stmt.If)
 	} else if stmt.For != nil {
 		return i.handleFor(ctx, *stmt.For)
+	} else if stmt.Wait != nil {
+		return i.handleWait(ctx, *stmt.Wait)
 	} else {
 		return i.errorf(stmt.SourceLocation, "unexpected statement type")
 	}
@@ -401,6 +403,24 @@ func (i *Interpreter) handleForArgs(ctx context.Context, forArgs []string, sl *s
 		return strings.ContainsRune(opts.Separators, r)
 	})
 	return variable, instances, nil
+}
+
+func (i *Interpreter) handleWait(ctx context.Context, waitStmt spec.WaitStatement) error {
+	if !i.converter.ftrs.WaitBlock {
+		return i.errorf(waitStmt.SourceLocation, "the WAIT command is not supported in this version")
+	}
+
+	err := i.converter.PushWaitBlock(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = i.handleBlock(ctx, waitStmt.Body)
+	if err != nil {
+		return err
+	}
+
+	return i.converter.PopWaitBlock(ctx)
 }
 
 // Commands -------------------------------------------------------------------

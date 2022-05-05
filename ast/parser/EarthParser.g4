@@ -19,7 +19,8 @@ stmt:
 	commandStmt
 	| withStmt
 	| ifStmt
-	| forStmt;
+	| forStmt
+	| waitStmt;
 
 commandStmt:
 	fromStmt
@@ -86,6 +87,10 @@ forClause: FOR WS forExpr (NL+ WS? forBlock)?;
 forBlock: stmts;
 
 forExpr: stmtWords;
+
+// waitStmt --------------------------------------------------------------------
+
+waitStmt: WAIT NL+ stmts? NL+ WS? END;
 
 // Regular commands -----------------------------------------------------------
 

@@ -263,6 +263,8 @@ type SaveImage struct {
 	// list (usually used for multi-platform setups). This means that the image
 	// can only be a single-platform image.
 	NoManifestList bool
+
+	Platform platutil.Platform
 }
 
 // RunPush is a series of RUN --push commands to be run after the build has been deemed as

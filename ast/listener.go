@@ -20,6 +20,7 @@ type block struct {
 	ifStatement   *spec.IfStatement
 	elseIf        *spec.ElseIf
 	forStatement  *spec.ForStatement
+	waitStatement *spec.WaitStatement
 }
 
 type listener struct {
@@ -159,6 +160,9 @@ func (l *listener) EnterStmt(c *parser.StmtContext) {
 }
 
 func (l *listener) ExitStmt(c *parser.StmtContext) {
+	if l.block().statement == nil {
+		panic("current block statement was never set")
+	}
 	l.block().block = append(l.block().block, *l.block().statement)
 	l.block().statement = nil
 }
@@ -483,6 +487,28 @@ func (l *listener) EnterForBlock(c *parser.ForBlockContext) {
 func (l *listener) ExitForBlock(c *parser.ForBlockContext) {
 	forBlock := l.popBlock()
 	l.block().forStatement.Body = forBlock
+}
+
+// Wait -----------------------------------------------------------------------
+
+func (l *listener) EnterWaitStmt(c *parser.WaitStmtContext) {
+	l.block().waitStatement = new(spec.WaitStatement)
+	if l.enableSourceMap {
+		l.block().waitStatement.SourceLocation = &spec.SourceLocation{
+			File:        l.filePath,
+			StartLine:   c.GetStart().GetLine(),
+			StartColumn: c.GetStart().GetColumn(),
+			EndLine:     c.GetStop().GetLine(),
+			EndColumn:   c.GetStop().GetColumn(),
+		}
+	}
+	l.pushNewBlock()
+}
+
+func (l *listener) ExitWaitStmt(c *parser.WaitStmtContext) {
+	waitBlock := l.popBlock()
+	l.block().waitStatement.Body = waitBlock
+	l.block().statement.Wait = l.block().waitStatement
 }
 
 // EnvArgKey, EnvArgValue, LabelKey, LabelValue -------------------------------

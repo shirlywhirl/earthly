@@ -238,6 +238,7 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 			}
 
 			for _, saveImage := range b.targetPhaseImages(sts) {
+				fmt.Printf("builder.go here with %s\n", saveImage.DockerTag)
 				doSave := (sts.GetDoSaves() || saveImage.ForceSave)
 				shouldPush := opt.Push && saveImage.Push && !sts.Target.IsRemote() && saveImage.DockerTag != "" && doSave
 				shouldExport := !opt.NoOutput && opt.OnlyArtifact == nil && !(opt.OnlyFinalTargetImages && sts != mts.Final) && saveImage.DockerTag != "" && doSave
@@ -256,6 +257,7 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 				}
 
 				if !isMultiPlatform[saveImage.DockerTag] {
+					fmt.Printf("single platform\n")
 					if saveImage.CheckDuplicate && saveImage.DockerTag != "" {
 						if _, found := singPlatImgNames[saveImage.DockerTag]; found {
 							return nil, errors.Errorf(
@@ -266,8 +268,8 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 					}
 
 					refKey := fmt.Sprintf("image-%d", imageIndex)
-					refPrefix := fmt.Sprintf("ref/%s", refKey)
-					imageIndex++
+					refPrefix := fmt.Sprintf("ref/%s", refKey) // ref/image-0     or ref/image-my-uuid-here
+					imageIndex++                               // 0 -> 1
 
 					localRegPullID := fmt.Sprintf("sess-%s/sp:img%d", gwClient.BuildOpts().SessionID, imageIndex)
 					localImages[localRegPullID] = saveImage.DockerTag
@@ -278,6 +280,9 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 							res.AddMeta(fmt.Sprintf("%s/export-image", refPrefix), []byte("true"))
 						}
 					}
+					if earthfile2llb.SeenWaitBlockFeature {
+						panic("no images should be marked for saving at this point in the code")
+					}
 					res.AddMeta(fmt.Sprintf("%s/image.name", refPrefix), []byte(saveImage.DockerTag))
 					if shouldPush {
 						res.AddMeta(fmt.Sprintf("%s/export-image-push", refPrefix), []byte("true"))
@@ -286,12 +291,14 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 						}
 					}
 					res.AddMeta(fmt.Sprintf("%s/%s", refPrefix, exptypes.ExporterImageConfigKey), config)
-					res.AddMeta(fmt.Sprintf("%s/image-index", refPrefix), []byte(fmt.Sprintf("%d", imageIndex)))
+					// TODO is this even used? Maybe not -- I should try to comment it out.
+					res.AddMeta(fmt.Sprintf("%s/image-index", refPrefix), []byte(fmt.Sprintf("%d", imageIndex))) // ref/image-0   =    "1"
 					res.AddRef(refKey, ref)
 				} else {
+					fmt.Printf("multi platform\n")
 					resolvedPlat := sts.PlatformResolver.Materialize(sts.PlatformResolver.Current())
 					platformStr := resolvedPlat.String()
-					platformImgName, err := platformSpecificImageName(saveImage.DockerTag, resolvedPlat)
+					platformImgName, err := llbutil.PlatformSpecificImageName(saveImage.DockerTag, resolvedPlat)
 					if err != nil {
 						return nil, err
 					}
@@ -314,6 +321,9 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 						refPrefix := fmt.Sprintf("ref/%s", refKey)
 						imageIndex++
 
+						if earthfile2llb.SeenWaitBlockFeature {
+							panic("no images should be marked for saving at this point in the code")
+						}
 						res.AddMeta(fmt.Sprintf("%s/image.name", refPrefix), []byte(saveImage.DockerTag))
 						res.AddMeta(fmt.Sprintf("%s/platform", refPrefix), []byte(platformStr))
 						res.AddMeta(fmt.Sprintf("%s/export-image-push", refPrefix), []byte("true"))
@@ -331,7 +341,7 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 						refPrefix := fmt.Sprintf("ref/%s", refKey)
 						imageIndex++
 
-						localRegPullID, err := platformSpecificImageName(
+						localRegPullID, err := llbutil.PlatformSpecificImageName(
 							fmt.Sprintf("sess-%s/mp:img%d", gwClient.BuildOpts().SessionID, imageIndex), resolvedPlat)
 						if err != nil {
 							return nil, err
@@ -341,6 +351,10 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 							res.AddMeta(fmt.Sprintf("%s/export-image-local-registry", refPrefix), []byte(localRegPullID))
 						} else {
 							res.AddMeta(fmt.Sprintf("%s/export-image", refPrefix), []byte("true"))
+						}
+
+						if earthfile2llb.SeenWaitBlockFeature {
+							panic("no images should be marked for saving at this point in the code")
 						}
 						res.AddMeta(fmt.Sprintf("%s/image.name", refPrefix), []byte(platformImgName))
 						res.AddMeta(fmt.Sprintf("%s/%s", refPrefix, exptypes.ExporterImageConfigKey), config)
@@ -391,6 +405,9 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 					return nil, err
 				}
 			}
+		}
+		for k, v := range res.Metadata {
+			fmt.Printf("  %s -> %s\n", string(k), string(v))
 		}
 		return res, nil
 	}
@@ -602,6 +619,11 @@ func (b *Builder) convertAndBuild(ctx context.Context, target domain.Target, opt
 		b.opt.Console.PrintPhaseHeader(PhaseOutput, opt.NoOutput, outputPhaseSpecial)
 	}
 	outputConsole.Flush()
+
+	//for _, hack := range earthfile2llb.HackManifests {
+	//	manifestLists
+	//}
+
 	for parentImageName, children := range manifestLists {
 		err = loadDockerManifest(ctx, b.opt.Console, b.opt.ContainerFrontend, parentImageName, children)
 		if err != nil {

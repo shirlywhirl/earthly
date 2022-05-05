@@ -95,6 +95,9 @@ type EarthParserListener interface {
 	// EnterForExpr is called when entering the forExpr production.
 	EnterForExpr(c *ForExprContext)
 
+	// EnterWaitStmt is called when entering the waitStmt production.
+	EnterWaitStmt(c *WaitStmtContext)
+
 	// EnterFromStmt is called when entering the fromStmt production.
 	EnterFromStmt(c *FromStmtContext)
 
@@ -295,6 +298,9 @@ type EarthParserListener interface {
 
 	// ExitForExpr is called when exiting the forExpr production.
 	ExitForExpr(c *ForExprContext)
+
+	// ExitWaitStmt is called when exiting the waitStmt production.
+	ExitWaitStmt(c *WaitStmtContext)
 
 	// ExitFromStmt is called when exiting the fromStmt production.
 	ExitFromStmt(c *FromStmtContext)

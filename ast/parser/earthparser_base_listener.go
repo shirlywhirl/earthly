@@ -195,6 +195,12 @@ func (s *BaseEarthParserListener) EnterForExpr(ctx *ForExprContext) {}
 // ExitForExpr is called when production forExpr is exited.
 func (s *BaseEarthParserListener) ExitForExpr(ctx *ForExprContext) {}
 
+// EnterWaitStmt is called when production waitStmt is entered.
+func (s *BaseEarthParserListener) EnterWaitStmt(ctx *WaitStmtContext) {}
+
+// ExitWaitStmt is called when production waitStmt is exited.
+func (s *BaseEarthParserListener) ExitWaitStmt(ctx *WaitStmtContext) {}
+
 // EnterFromStmt is called when production fromStmt is entered.
 func (s *BaseEarthParserListener) EnterFromStmt(ctx *FromStmtContext) {}
 
